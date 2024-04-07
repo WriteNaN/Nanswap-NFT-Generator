@@ -8,8 +8,7 @@
 
 ## Usage
 ### Install from releases[¹](https://github.com/WriteNaN/Nanswap-NFT-Generator/releases):
-Although this has only been tested on Linux, it should work with any of the targets Zig support with Imagemagick installed.
-If you couldn't find your version on release. I would recommend building from source.
+This program is only tested on Linux, although maybe compatible with other os I highly recommend you to use WSL or something similar.
 
 * Copy the path of installed command
 #### Quick command example:
