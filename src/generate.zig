@@ -118,5 +118,5 @@ pub fn overlayImages(images: [][]const u8, out: []const u8) !void {
     //std.debug.print("{any}", .{args.items});
 
     var child = std.process.Child.init(args.items, allocator);
-    try child.spawn();
+    _ = try child.spawnAndWait();
 }
