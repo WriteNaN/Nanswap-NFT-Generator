@@ -1,5 +1,6 @@
 const std = @import("std");
 const random = @import("random.zig"); // check random.zig to understand recursion.
+const utils = @import("Pad.zig");
 
 const c = @cImport({
     @cInclude("stdio.h");
@@ -12,21 +13,42 @@ pub const StructuredMetaItem = struct {
     value: []const u8,
 };
 
-pub const NanswapJSON = struct { customField: []const u8, attributes: []StructuredMetaItem };
+pub const NanswapJSON = struct { name: []const u8, token_id: usize, description: []const u8, attributes: []StructuredMetaItem };
 
 pub const BuildConfig = struct { file: []const u8, dir: []const u8, out: []const u8, zip: bool, number: i32 };
 
 pub fn build(config: BuildConfig) !void {
-    const cx : usize = @intCast(config.number+1);
+    var arenaU = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arenaU.deinit();
+
+    const allocU = arenaU.allocator();
+    const cx: usize = @intCast(config.number + 1);
+    const max = try std.fmt.allocPrint(allocU, "{}", .{config.number + 1});
     for (1..cx) |i| {
-        _ = try setX(config.file, config.out, i, config.number+1);
+        _ = try setX(config.file, config.out, i, max);
         _ = c.printf("Progress: %d/%d\n", i, config.number);
     }
+
+    // /workspaces/dev/zig-out/bin/nft-generator -i /workspaces/dev/example/collection.json -o /workspaces/dev/dist -n 3
+    if (config.zip) {
+        var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+        defer arena.deinit();
+        const allocator = arena.allocator();
+
+        // std.Target.Os.Tag;
+        const cmd = try std.fmt.allocPrint(allocator, "Compress-Archive generated.zip {s} || zip -r generated {s}", .{config.out, config.out});
+        std.debug.print("{s} {s}", .{cmd, config.out});
+        var process = std.process.Child.init(&.{cmd}, allocator);
+        _ = try process.spawnAndWait();
+
+        std.debug.print("saved zip to generated.zip!", .{});
+    }
+
     try std.process.exit(0);
 }
 
 // the name doesn't mean anything, sorry I couldn't come up with anything else :(
-pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: i32) !void {
+pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const u8) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
@@ -46,8 +68,10 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: i32) !vo
 
     //std.debug.print("{s}", .{JSON});
 
-    var parsed = try std.json.parseFromSlice(struct { name: []const u8, layers: []struct { layer: i16, name: []const u8, items: []struct { trait: []const u8, asset: []const u8, odds: i16, invalidWith: []const []const u8 } } }, allocator, JSON, .{ .ignore_unknown_fields = true });
+    var parsed = try std.json.parseFromSlice(struct { name: []const u8, description: []const u8, layers: []struct { layer: i16, name: []const u8, items: []struct { trait: []const u8, asset: []const u8, odds: i16, invalidWith: []const []const u8 } } }, allocator, JSON, .{ .ignore_unknown_fields = true });
     defer parsed.deinit();
+
+    const desc = parsed.value.description;
 
     var arenaM = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arenaM.deinit();
@@ -80,21 +104,26 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: i32) !vo
 
     const itemsX = imageLayers.items;
 
-    const nft_name = try std.fmt.allocPrint(allocator, "{s} #{}", .{parsed.value.name, numb});
+    var arenaP = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arenaP.deinit();
+    const allocatorP = arena.allocator();
+
+    const numXc = try std.fmt.allocPrint(allocator, "{}", .{numb});
+
+    const hash = try utils.padNumberWithZerosWithAlloc(allocatorP, numXc, max.len);
+    std.debug.print("{s}", .{hash});
+    const nft_name = try std.fmt.allocPrint(allocator, "{s} #{s}", .{ parsed.value.name, hash });
 
     const fileName = try std.fmt.allocPrint(allocator, "{s}/{}.png", .{ outdir, numb });
-    const exportJ = NanswapJSON{
-        .attributes = attributes.items,
-        .customField = nft_name
-    };
+    const exportJ = NanswapJSON{ .attributes = attributes.items, .name = nft_name, .token_id = numb, .description = desc };
 
     const jsonFilePath = try std.fmt.allocPrint(allocator, "{s}/{}.json", .{ outdir, numb });
     var json_string = std.ArrayList(u8).init(allocator);
     defer json_string.deinit();
     try std.json.stringify(exportJ, .{}, json_string.writer());
-    try std.fs.cwd().writeFile2(.{.data = json_string.items, .sub_path = jsonFilePath});
+    try std.fs.cwd().writeFile2(.{ .data = json_string.items, .sub_path = jsonFilePath });
 
-    std.debug.print("{}", .{max});
+    //std.debug.print("line: 109 {}\n", .{max});
 
     try overlayImages(itemsX, fileName);
 }
@@ -114,7 +143,6 @@ pub fn overlayImages(images: [][]const u8, out: []const u8) !void {
     try args.append("-layers");
     try args.append("merge");
     try args.append(out);
-
     //std.debug.print("{any}", .{args.items});
 
     var child = std.process.Child.init(args.items, allocator);
