@@ -69,5 +69,6 @@ fn run_cmd() !void {
         .zip = config.zip,
         .number = config.number
     };
+
     try generate.build(build_config);
 }
