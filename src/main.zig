@@ -11,6 +11,7 @@ var config = struct {
     out: []const u8 = undefined,
     zip: bool = false,
     number: i32 = undefined,
+    applyNone: bool = false,
     threads: u64 = 1
 }{};
 
@@ -20,6 +21,14 @@ var input = cli.Option{
     .help = "Main JSON file with config",
     .required = true,
     .value_ref = cli.mkRef(&config.file),
+};
+
+var applyNone = cli.Option{
+    .long_name = "applyNone",
+    .short_alias = 'a',
+    .help = "Remove traits with key \"None\" from metadata",
+    .required = false,
+    .value_ref = cli.mkRef(&config.applyNone)
 };
 
 var outDir = cli.Option{
@@ -57,7 +66,7 @@ var num = cli.Option{
 var app = &cli.App{
     .command = cli.Command{
         .name = "generate",
-        .options = &.{ &input, &zip, &outDir, &num, &threads },
+        .options = &.{ &input, &zip, &outDir, &num, &threads, &applyNone },
         .target = cli.CommandTarget{
             .action = cli.CommandAction{ .exec = run_cmd },
         },
@@ -77,7 +86,8 @@ fn run_cmd() !void {
         .out = config.out,
         .zip = config.zip,
         .number = config.number,
-        .threads = config.threads
+        .threads = config.threads,
+        .applyNone = config.applyNone
     };
 
     try generate.build(build_config);

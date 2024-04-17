@@ -15,7 +15,7 @@ pub const StructuredMetaItem = struct {
 
 pub const NanswapJSON = struct { name: []const u8, token_id: usize, description: []const u8, attributes: []StructuredMetaItem };
 
-pub const BuildConfig = struct { file: []const u8, dir: []const u8, out: []const u8, zip: bool, number: i32, threads: u64 };
+pub const BuildConfig = struct { file: []const u8, dir: []const u8, out: []const u8, zip: bool, number: i32, threads: u64, applyNone: bool };
 
 pub fn build(config: BuildConfig) !void {
     var arenaU = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -28,7 +28,7 @@ pub fn build(config: BuildConfig) !void {
     const cx: usize = @intCast(config.number + 1);
     const max = try std.fmt.allocPrint(allocU, "{}", .{config.number + 1});
     for (1..cx) |i| {
-        try doTask(config, i, max);
+        try doTask(config, i, max, config.applyNone);
     }
 
     // /workspaces/dev/zig-out/bin/nft-generator -i /workspaces/dev/example/collection.json -o /workspaces/dev/dist -n 3
@@ -43,7 +43,7 @@ pub fn build(config: BuildConfig) !void {
         //std.debug.print("{s}\n", .{outDir});
 
         // std.Target.Os.Tag;
-        var process = std.process.Child.init(&.{"zip", "-r", "generated", outDir}, allocator);
+        var process = std.process.Child.init(&.{ "zip", "-r", "generated", outDir }, allocator);
         _ = try process.spawnAndWait();
 
         std.debug.print("saved zip to generated.zip!\n", .{});
@@ -52,13 +52,13 @@ pub fn build(config: BuildConfig) !void {
     try std.process.exit(0);
 }
 
-fn doTask(config: BuildConfig, i: usize, max: []u8) !void {
-    _ = try setX(config.file, config.out, i, max);
+fn doTask(config: BuildConfig, i: usize, max: []u8, applyNone: bool) !void {
+    _ = try setX(config.file, config.out, i, max, applyNone);
     _ = c.printf("Progress: %d/%d\n", i, config.number);
 }
 
 // the name doesn't mean anything, sorry I couldn't come up with anything else :(
-pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const u8) !void {
+pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const u8, applyNone: bool) !void {
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer arena.deinit();
     const allocator = arena.allocator();
@@ -125,7 +125,13 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const 
     const nft_name = try std.fmt.allocPrint(allocator, "{s} #{s}", .{ parsed.value.name, hash });
 
     const fileName = try std.fmt.allocPrint(allocator, "{s}/{}.png", .{ outdir, numb });
+
+
+    // TODO: apply none.
     const exportJ = NanswapJSON{ .attributes = attributes.items, .name = nft_name, .token_id = numb, .description = desc };
+    if (applyNone) {
+        
+    }
 
     const jsonFilePath = try std.fmt.allocPrint(allocator, "{s}/{}.json", .{ outdir, numb });
     var json_string = std.ArrayList(u8).init(allocator);
