@@ -74,7 +74,7 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const 
 
     //std.debug.print("{s}", .{JSON});
 
-    var parsed = try std.json.parseFromSlice(struct { name: []const u8, description: []const u8, layers: []struct { layer: i16, name: []const u8, items: []struct { trait: []const u8, asset: []const u8, odds: i16, invalidWith: []const []const u8 } } }, allocator, JSON, .{ .ignore_unknown_fields = true });
+    var parsed = try std.json.parseFromSlice(struct { name: []const u8, description: []const u8, layers: []struct { layer: i16, name: []const u8, items: []struct { trait: []const u8, asset: []const u8, odds: i16, invalidWith: ?[]const []const u8 = null } } }, allocator, JSON, .{ .ignore_unknown_fields = true });
     defer parsed.deinit();
 
     const desc = parsed.value.description;
