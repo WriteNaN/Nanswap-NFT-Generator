@@ -23,6 +23,8 @@ pub fn build(config: BuildConfig) !void {
 
     const allocU = arenaU.allocator();
 
+    _ = std.fs.cwd().makeDir(config.out) catch void;
+
     const cx: usize = @intCast(config.number + 1);
     const max = try std.fmt.allocPrint(allocU, "{}", .{config.number + 1});
     for (1..cx) |i| {
@@ -36,13 +38,16 @@ pub fn build(config: BuildConfig) !void {
         defer arena.deinit();
         const allocator = arena.allocator();
 
+        const xDir = try std.fs.cwd().openDir(config.out, .{});
+        const outDir = try xDir.realpathAlloc(allocator, ".");
+
+        //std.debug.print("{s}\n", .{outDir});
+
         // std.Target.Os.Tag;
-        const cmd = try std.fmt.allocPrint(allocator, "Compress-Archive generated.zip {s} || zip -r generated {s}", .{config.out, config.out});
-        std.debug.print("{s} {s}", .{cmd, config.out});
-        var process = std.process.Child.init(&.{cmd}, allocator);
+        var process = std.process.Child.init(&.{"zip", "-r", "generated", outDir}, allocator);
         _ = try process.spawnAndWait();
 
-        std.debug.print("saved zip to generated.zip!", .{});
+        std.debug.print("saved zip to generated.zip!\n", .{});
     }
 
     try std.process.exit(0);
@@ -61,8 +66,6 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const 
     var in_stream = buf_reader.reader();
 
     var buf: [1024]u8 = undefined;
-
-    _ = std.fs.cwd().makeDir(outdir) catch void;
 
     var JSON: []const u8 = "";
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
