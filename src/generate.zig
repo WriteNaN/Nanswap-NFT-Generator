@@ -126,8 +126,6 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const 
 
     const fileName = try std.fmt.allocPrint(allocator, "{s}/{}.png", .{ outdir, numb });
 
-    // TODO: apply none.
-
     var newAttributes = std.ArrayList(StructuredMetaItem).init(allocator);
 
     if (applyNone) {
