@@ -22,6 +22,7 @@ pub fn build(config: BuildConfig) !void {
     defer arenaU.deinit();
 
     const allocU = arenaU.allocator();
+
     const cx: usize = @intCast(config.number + 1);
     const max = try std.fmt.allocPrint(allocU, "{}", .{config.number + 1});
     for (1..cx) |i| {
@@ -60,6 +61,8 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const 
     var in_stream = buf_reader.reader();
 
     var buf: [1024]u8 = undefined;
+
+    _ = std.fs.cwd().makeDir(outdir) catch void;
 
     var JSON: []const u8 = "";
     while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
@@ -111,7 +114,7 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const 
     const numXc = try std.fmt.allocPrint(allocator, "{}", .{numb});
 
     const hash = try utils.padNumberWithZerosWithAlloc(allocatorP, numXc, max.len);
-    std.debug.print("{s}", .{hash});
+    //std.debug.print("{s}", .{hash});
     const nft_name = try std.fmt.allocPrint(allocator, "{s} #{s}", .{ parsed.value.name, hash });
 
     const fileName = try std.fmt.allocPrint(allocator, "{s}/{}.png", .{ outdir, numb });
