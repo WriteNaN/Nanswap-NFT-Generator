@@ -126,12 +126,23 @@ pub fn setX(filePath: []const u8, outdir: []const u8, numb: usize, max: []const 
 
     const fileName = try std.fmt.allocPrint(allocator, "{s}/{}.png", .{ outdir, numb });
 
-
     // TODO: apply none.
-    const exportJ = NanswapJSON{ .attributes = attributes.items, .name = nft_name, .token_id = numb, .description = desc };
+
+    var newAttributes = std.ArrayList(StructuredMetaItem).init(allocator);
+
     if (applyNone) {
-        
+        for (attributes.items) |item| {
+            if (std.mem.eql(u8, item.value, "None")) {} else {
+                try newAttributes.append(item);
+            }
+        }
+    } else {
+        for (attributes.items) |item| {
+            try newAttributes.append(item);
+        }
     }
+
+    const exportJ = NanswapJSON{ .attributes = newAttributes.items, .name = nft_name, .token_id = numb, .description = desc };
 
     const jsonFilePath = try std.fmt.allocPrint(allocator, "{s}/{}.json", .{ outdir, numb });
     var json_string = std.ArrayList(u8).init(allocator);
