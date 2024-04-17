@@ -10,7 +10,8 @@ var config = struct {
     dir: []const u8 = undefined,
     out: []const u8 = undefined,
     zip: bool = false,
-    number: i32 = undefined
+    number: i32 = undefined,
+    threads: u64 = 1
 }{};
 
 var input = cli.Option{
@@ -25,22 +26,30 @@ var outDir = cli.Option{
     .long_name = "out",
     .required = true,
     .short_alias = 'o',
-    .help = "Out directory, this will be <out>.zip instead if zip is added to args. to prevent OOM error, will be temp moved to disk.",
+    .help = "Directory to export",
     .value_ref = cli.mkRef(&config.out)
 };
 
 var zip = cli.Option{
     .long_name = "zip",
     .short_alias = 'z',
-    .help = "Wheter to zip file when exporting.",
+    .help = "Wheter to zip file when exporting",
     .required = false,
     .value_ref = cli.mkRef(&config.zip)
+};
+
+var threads = cli.Option{
+    .long_name = "threads",
+    .short_alias = 't',
+    .help = "Number of threads to leverage for image generation",
+    .required = false,
+    .value_ref = cli.mkRef(&config.threads)
 };
 
 var num = cli.Option{
     .long_name = "number",
     .short_alias = 'n',
-    .help = "Number of NFTs to generate.",
+    .help = "Number of NFTs to generate",
     .required = true,
     .value_ref = cli.mkRef(&config.number)
 };
@@ -48,7 +57,7 @@ var num = cli.Option{
 var app = &cli.App{
     .command = cli.Command{
         .name = "generate",
-        .options = &.{ &input, &zip, &outDir, &num },
+        .options = &.{ &input, &zip, &outDir, &num, &threads },
         .target = cli.CommandTarget{
             .action = cli.CommandAction{ .exec = run_cmd },
         },
@@ -67,7 +76,8 @@ fn run_cmd() !void {
         .dir = config.dir,
         .out = config.out,
         .zip = config.zip,
-        .number = config.number
+        .number = config.number,
+        .threads = config.threads
     };
 
     try generate.build(build_config);

@@ -2,3 +2,4 @@ zig-out
 zig-cache
 
 example-bot
+test.sh

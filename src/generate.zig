@@ -15,7 +15,7 @@ pub const StructuredMetaItem = struct {
 
 pub const NanswapJSON = struct { name: []const u8, token_id: usize, description: []const u8, attributes: []StructuredMetaItem };
 
-pub const BuildConfig = struct { file: []const u8, dir: []const u8, out: []const u8, zip: bool, number: i32 };
+pub const BuildConfig = struct { file: []const u8, dir: []const u8, out: []const u8, zip: bool, number: i32, threads: u64 };
 
 pub fn build(config: BuildConfig) !void {
     var arenaU = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -28,8 +28,7 @@ pub fn build(config: BuildConfig) !void {
     const cx: usize = @intCast(config.number + 1);
     const max = try std.fmt.allocPrint(allocU, "{}", .{config.number + 1});
     for (1..cx) |i| {
-        _ = try setX(config.file, config.out, i, max);
-        _ = c.printf("Progress: %d/%d\n", i, config.number);
+        try doTask(config, i, max);
     }
 
     // /workspaces/dev/zig-out/bin/nft-generator -i /workspaces/dev/example/collection.json -o /workspaces/dev/dist -n 3
@@ -51,6 +50,11 @@ pub fn build(config: BuildConfig) !void {
     }
 
     try std.process.exit(0);
+}
+
+fn doTask(config: BuildConfig, i: usize, max: []u8) !void {
+    _ = try setX(config.file, config.out, i, max);
+    _ = c.printf("Progress: %d/%d\n", i, config.number);
 }
 
 // the name doesn't mean anything, sorry I couldn't come up with anything else :(
