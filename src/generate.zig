@@ -10,12 +10,12 @@ const c = @cImport({
 pub const StructuredMetaItem = struct {
     // name
     trait_type: []const u8,
-    value: []const u8,
+    value: []const u8
 };
 
 pub const NanswapJSON = struct { name: []const u8, token_id: usize, description: []const u8, attributes: []StructuredMetaItem };
 
-pub const BuildConfig = struct { file: []const u8, dir: []const u8, out: []const u8, zip: bool, number: i32, threads: u64, applyNone: bool };
+pub const BuildConfig = struct { file: []const u8, dir: []const u8, out: []const u8, zip: bool, number: i32, threads: u64, applyNone: bool, startFrom: u64 };
 
 pub fn build(config: BuildConfig) !void {
     var arenaU = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -27,7 +27,7 @@ pub fn build(config: BuildConfig) !void {
 
     const cx: usize = @intCast(config.number + 1);
     const max = try std.fmt.allocPrint(allocU, "{}", .{config.number + 1});
-    for (1..cx) |i| {
+    for (config.startFrom..cx) |i| {
         try doTask(config, i, max, config.applyNone);
     }
 

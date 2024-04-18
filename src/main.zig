@@ -12,7 +12,8 @@ var config = struct {
     zip: bool = false,
     number: i32 = undefined,
     applyNone: bool = false,
-    threads: u64 = 1
+    threads: u64 = 1,
+    startFrom: u64 = 1
 }{};
 
 var input = cli.Option{
@@ -63,10 +64,18 @@ var num = cli.Option{
     .value_ref = cli.mkRef(&config.number)
 };
 
+var startFrom = cli.Option{
+    .long_name = "startFrom",
+    .short_alias = 'f',
+    .help = "If you have 1/1s in your collections, start from a specific number",
+    .required = false,
+    .value_ref = cli.mkRef(&config.startFrom)
+};
+
 var app = &cli.App{
     .command = cli.Command{
         .name = "generate",
-        .options = &.{ &input, &zip, &outDir, &num, &threads, &applyNone },
+        .options = &.{ &input, &zip, &outDir, &num, &threads, &applyNone, &startFrom },
         .target = cli.CommandTarget{
             .action = cli.CommandAction{ .exec = run_cmd },
         },
@@ -87,7 +96,8 @@ fn run_cmd() !void {
         .zip = config.zip,
         .number = config.number,
         .threads = config.threads,
-        .applyNone = config.applyNone
+        .applyNone = config.applyNone,
+        .startFrom = config.startFrom
     };
 
     try generate.build(build_config);
